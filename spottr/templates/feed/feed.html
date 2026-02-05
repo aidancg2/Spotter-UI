@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - Feed{% endblock %}
+
+{% block content %}
+<!-- Feed Tabs -->
+<div class="tab-bar">
+    <a href="?tab=main" class="tab-item {% if tab == 'main' %}active{% endif %}">Main Feed</a>
+    <a href="?tab=friends" class="tab-item {% if tab == 'friends' %}active{% endif %}">Friends</a>
+</div>
+
+<!-- Posts -->
+<div class="feed-container">
+    {% if not posts %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-dumbbell"></i></div>
+        <h3>No posts yet</h3>
+        <p>{% if tab == 'friends' %}Follow some friends to see their posts here!{% else %}Be the first to share your workout!{% endif %}</p>
+    </div>
+    {% endif %}
+
+    {% for post in posts %}
+    <div class="post-card" data-post-id="{{ post.id }}">
+        <!-- Post Header -->
+        <div class="post-header">
+            <a href="{% url 'user_profile' post.user.username %}" class="post-avatar">
+                {% if post.user.profile.avatar %}
+                    <img src="{{ post.user.profile.avatar.url }}" alt="" class="avatar-img">
+                {% else %}
+                    <span class="avatar-emoji">{{ post.user.profile.avatar_emoji }}</span>
+                {% endif %}
+            </a>
+            <div class="post-user-info">
+                <a href="{% url 'user_profile' post.user.username %}" class="post-username">{{ post.user.profile.display_name|default:post.user.username }}</a>
+                <div class="post-meta">
+                    <span class="post-time">{{ post.time_ago }}</span>
+                    {% if post.location %}
+                    <span class="post-location">
+                        <i class="fas fa-map-marker-alt"></i> {{ post.location }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if post.user.profile.current_streak > 0 %}
+            <div class="post-streak-badge">
+                <i class="fas fa-fire"></i> {{ post.user.profile.current_streak }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Post Type Badge -->
+        {% if post.post_type == 'workout' %}
+        <div class="post-type-badge workout-badge">
+            <i class="fas fa-dumbbell"></i>
+            {% if post.workout %}
+                {{ post.workout.name }}
+            {% else %}
+                Workout
+            {% endif %}
+        </div>
+        {% elif post.post_type == 'pr' %}
+        <div class="post-type-badge pr-badge">
+            <i class="fas fa-arrow-trend-up"></i> New PR
+        </div>
+        {% elif post.post_type == 'streak' %}
+        <div class="post-type-badge streak-badge-post">
+            <i class="fas fa-fire"></i> {{ post.streak_days }} Day Streak
+        </div>
+        {% elif post.post_type == 'checkin' %}
+        <div class="post-type-badge checkin-badge">
+            <i class="fas fa-map-pin"></i> Check-in
+        </div>
+        {% endif %}
+
+        <!-- Post Content -->
+        {% if post.content %}
+        <div class="post-content">
+            <p>{{ post.content }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Post Image -->
+        {% if post.image %}
+        <div class="post-image">
+            <img src="{{ post.image.url }}" alt="Post image" loading="lazy">
+        </div>
+        {% endif %}
+
+        <!-- Workout Stats -->
+        {% if post.post_type == 'workout' and post.workout %}
+        <div class="workout-stats-card">
+            <div class="stat-item">
+                <span class="stat-value">{{ post.workout.exercise_count }}</span>
+                <span class="stat-label">Exercises</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ post.workout.set_count }}</span>
+                <span class="stat-label">Sets</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ post.workout.duration_minutes|duration_format }}</span>
+                <span class="stat-label">Duration</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- PR Info -->
+        {% if post.post_type == 'pr' and post.pr_exercise %}
+        <div class="pr-highlight">
+            <div class="pr-exercise">{{ post.pr_exercise }}</div>
+            <div class="pr-weight">{{ post.pr_weight }} lbs</div>
+            <i class="fas fa-arrow-trend-up pr-trend"></i>
+        </div>
+        {% endif %}
+
+        <!-- Check-in Activities -->
+        {% if post.post_type == 'checkin' and post.activities %}
+        <div class="activity-tags">
+            {% for activity in post.get_activities_list %}
+            <span class="activity-tag">{{ activity }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Hashtags -->
+        {% if post.hashtags %}
+        <div class="hashtag-list">
+            {% for tag in post.get_hashtags_list %}
+            <span class="hashtag">{{ tag }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Poll -->
+        {% if post.has_poll %}
+        <div class="poll-card">
+            {% if post.poll_question %}
+            <p class="poll-question">{{ post.poll_question }}</p>
+            {% endif %}
+            {% for option in post.get_poll_options_list %}
+            <button class="poll-option" onclick="votePoll({{ post.id }}, {{ forloop.counter0 }})">
+                <span class="poll-option-text">{{ option }}</span>
+                <span class="poll-option-bar"></span>
+            </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Post Actions -->
+        <div class="post-actions">
+            <div class="reaction-bar">
+                <button class="reaction-btn {% if user_reactions|get_item:post.id == 'heart' %}active{% endif %}"
+                        onclick="react({{ post.id }}, 'heart')" title="Heart">
+                    <span>❤️</span>
+                    <span class="reaction-count">{{ post.heart_count }}</span>
+                </button>
+                <button class="reaction-btn {% if user_reactions|get_item:post.id == 'thumbsup' %}active{% endif %}"
+                        onclick="react({{ post.id }}, 'thumbsup')" title="Thumbs up">
+                    <span>👍</span>
+                    <span class="reaction-count">{{ post.thumbsup_count }}</span>
+                </button>
+                <button class="reaction-btn {% if user_reactions|get_item:post.id == 'flex' %}active{% endif %}"
+                        onclick="react({{ post.id }}, 'flex')" title="Flex">
+                    <span>💪</span>
+                    <span class="reaction-count">{{ post.flex_count }}</span>
+                </button>
+                <button class="reaction-btn {% if user_reactions|get_item:post.id == 'fire' %}active{% endif %}"
+                        onclick="react({{ post.id }}, 'fire')" title="Fire">
+                    <span>🔥</span>
+                    <span class="reaction-count">{{ post.fire_count }}</span>
+                </button>
+            </div>
+            <div class="post-action-btns">
+                <button class="action-btn" onclick="toggleComments({{ post.id }})">
+                    <i class="fas fa-comment"></i>
+                    <span>{{ post.comment_count }}</span>
+                </button>
+                <button class="action-btn">
+                    <i class="fas fa-share"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Comments Section (hidden by default) -->
+        <div class="comments-section hidden" id="comments-{{ post.id }}">
+            {% for comment in post.comments.all %}
+            <div class="comment">
+                <span class="comment-avatar">{{ comment.user.profile.avatar_emoji }}</span>
+                <div class="comment-body">
+                    <span class="comment-username">{{ comment.user.profile.display_name|default:comment.user.username }}</span>
+                    <span class="comment-text">{{ comment.content }}</span>
+                </div>
+            </div>
+            {% endfor %}
+            <form class="comment-form" method="post" action="{% url 'add_comment' post.id %}">
+                {% csrf_token %}
+                <input type="text" name="content" class="form-input comment-input" placeholder="Write a comment...">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

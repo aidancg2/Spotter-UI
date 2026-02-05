@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - Workout Complete{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="completion-hero">
+        <div class="completion-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <h2>Workout Complete!</h2>
+        <p class="text-muted">Great work finishing {{ workout.name }}</p>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="completion-stats">
+        <div class="completion-stat">
+            <span class="stat-value">{{ workout.exercise_count }}</span>
+            <span class="stat-label">Exercises</span>
+        </div>
+        <div class="completion-stat">
+            <span class="stat-value">{{ workout.set_count }}</span>
+            <span class="stat-label">Sets</span>
+        </div>
+        <div class="completion-stat">
+            <span class="stat-value">{{ workout.duration_minutes|duration_format }}</span>
+            <span class="stat-label">Duration</span>
+        </div>
+    </div>
+
+    <!-- Post to Feed -->
+    <div class="card">
+        <h3 class="card-title">Share Your Workout</h3>
+        <form method="post" action="{% url 'post_workout' workout.id %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Photo</label>
+                <div class="upload-area" onclick="document.getElementById('completionImage').click()">
+                    <i class="fas fa-camera"></i>
+                    <span>Add a photo</span>
+                    <input type="file" id="completionImage" name="image" accept="image/*" class="hidden"
+                           onchange="previewImage(this, 'completionPreview', 'completionPlaceholder')">
+                </div>
+                <div id="completionPlaceholder"></div>
+                <img id="completionPreview" class="preview-img-sm hidden" alt="Preview">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-input" rows="3" placeholder="How did it go?"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="save_template">
+                    <span>Save as template</span>
+                </label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Post to Feed</button>
+        </form>
+    </div>
+
+    <!-- Busy Level -->
+    <div class="card">
+        <h3 class="card-title">How busy was the gym?</h3>
+        <form method="post" action="{% url 'submit_busy_level' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'feed' %}">
+            <div class="busy-options-horizontal">
+                <label class="busy-option-sm">
+                    <input type="radio" name="level" value="1">
+                    <div class="busy-card-sm" style="--busy-color: #22c55e"><i class="fas fa-user"></i></div>
+                </label>
+                <label class="busy-option-sm">
+                    <input type="radio" name="level" value="2">
+                    <div class="busy-card-sm" style="--busy-color: #eab308"><i class="fas fa-user"></i><i class="fas fa-user"></i></div>
+                </label>
+                <label class="busy-option-sm">
+                    <input type="radio" name="level" value="3">
+                    <div class="busy-card-sm" style="--busy-color: #f97316"><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i></div>
+                </label>
+                <label class="busy-option-sm">
+                    <input type="radio" name="level" value="4">
+                    <div class="busy-card-sm" style="--busy-color: #ef4444"><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i></div>
+                </label>
+                <label class="busy-option-sm">
+                    <input type="radio" name="level" value="5">
+                    <div class="busy-card-sm" style="--busy-color: #a855f7"><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i></div>
+                </label>
+            </div>
+            <button type="submit" class="btn btn-ghost btn-full mt-2">Submit</button>
+        </form>
+    </div>
+
+    <a href="{% url 'feed' %}" class="btn btn-gradient btn-full mt-4">
+        <i class="fas fa-home"></i> Back to Feed
+    </a>
+</div>
+{% endblock %}

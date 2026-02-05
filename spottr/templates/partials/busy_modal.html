@@ -1,0 +1,59 @@
+{% load static %}
+<div class="modal-overlay" id="busyModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h2 class="modal-title">How busy is it?</h2>
+            <button class="modal-close" onclick="closeModal('busyModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form method="post" action="{% url 'submit_busy_level' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <div class="modal-body">
+                <p class="text-muted text-sm mb-4">Help others know how crowded the gym is right now.</p>
+                <div class="busy-options">
+                    <label class="busy-option">
+                        <input type="radio" name="level" value="1">
+                        <div class="busy-card" style="--busy-color: #22c55e">
+                            <div class="busy-icons"><i class="fas fa-user"></i></div>
+                            <span>Not crowded</span>
+                        </div>
+                    </label>
+                    <label class="busy-option">
+                        <input type="radio" name="level" value="2">
+                        <div class="busy-card" style="--busy-color: #eab308">
+                            <div class="busy-icons"><i class="fas fa-user"></i><i class="fas fa-user"></i></div>
+                            <span>Not too crowded</span>
+                        </div>
+                    </label>
+                    <label class="busy-option">
+                        <input type="radio" name="level" value="3">
+                        <div class="busy-card" style="--busy-color: #f97316">
+                            <div class="busy-icons"><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i></div>
+                            <span>Moderately crowded</span>
+                        </div>
+                    </label>
+                    <label class="busy-option">
+                        <input type="radio" name="level" value="4">
+                        <div class="busy-card" style="--busy-color: #ef4444">
+                            <div class="busy-icons"><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i></div>
+                            <span>Very crowded</span>
+                        </div>
+                    </label>
+                    <label class="busy-option">
+                        <input type="radio" name="level" value="5">
+                        <div class="busy-card" style="--busy-color: #a855f7">
+                            <div class="busy-icons"><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i><i class="fas fa-user"></i></div>
+                            <span>At capacity</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('busyModal')">Skip</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - Templates{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-top-bar">
+        <a href="{% url 'track_workout' %}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h2 class="page-title">Workout Templates</h2>
+        <div></div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <form method="get" class="search-form">
+            <input type="text" name="search" class="search-input" placeholder="Search templates..."
+                   value="{{ search }}">
+        </form>
+    </div>
+
+    <!-- Create New -->
+    <form method="post" action="{% url 'create_template' %}" class="mb-4">
+        {% csrf_token %}
+        <div class="create-template-row">
+            <input type="text" name="name" class="form-input" placeholder="New template name..." required>
+            <button type="submit" class="btn btn-primary btn-sm">Create</button>
+        </div>
+    </form>
+
+    <!-- Template List -->
+    <div class="template-list">
+        {% for tmpl in templates %}
+        <div class="template-card">
+            <a href="{% url 'workout_builder_template' tmpl.id %}" class="template-card-main">
+                <div class="template-info">
+                    <h4>{{ tmpl.name }}</h4>
+                    <span class="text-muted">{{ tmpl.exercise_count }} exercises &middot; ~{{ tmpl.estimated_duration|duration_format }}</span>
+                </div>
+                {% if tmpl.last_used %}
+                <span class="text-xs text-muted">Last: {{ tmpl.last_used|timesince }} ago</span>
+                {% endif %}
+            </a>
+            <form method="post" action="{% url 'delete_template' tmpl.id %}">
+                {% csrf_token %}
+                <button type="submit" class="icon-btn text-red" onclick="return confirm('Delete this template?')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </form>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-clipboard-list"></i></div>
+            <h3>No templates yet</h3>
+            <p>Create your first template above or save one after a workout</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

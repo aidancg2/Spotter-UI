@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - Track Workout{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-top-bar">
+        <a href="{% url 'feed' %}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h2 class="page-title">Track Workout</h2>
+        <div></div>
+    </div>
+
+    <!-- This Week Stats -->
+    <div class="week-stats-banner">
+        <div class="week-stat">
+            <span class="week-stat-value">{{ weekly_count }}</span>
+            <span class="week-stat-label">Workouts</span>
+        </div>
+        <div class="week-stat">
+            <span class="week-stat-value">{{ weekly_sets }}</span>
+            <span class="week-stat-label">Sets</span>
+        </div>
+        <div class="week-stat">
+            <span class="week-stat-value">{{ weekly_duration|duration_format }}</span>
+            <span class="week-stat-label">Duration</span>
+        </div>
+    </div>
+
+    {% if active_workout %}
+    <!-- Resume Active Workout -->
+    <div class="card active-workout-card">
+        <div class="active-workout-header">
+            <i class="fas fa-play-circle text-green"></i>
+            <div>
+                <h3>{{ active_workout.name }}</h3>
+                <span class="text-muted">In progress - {{ active_workout.started_at|timesince }}</span>
+            </div>
+        </div>
+        <a href="{% url 'workout_builder_resume' active_workout.id %}" class="btn btn-primary btn-full">
+            Resume Workout
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Start Options -->
+    <div class="workout-options">
+        <a href="{% url 'workout_builder_new' %}" class="workout-option-card">
+            <div class="option-icon bg-cyan"><i class="fas fa-plus"></i></div>
+            <div class="option-text">
+                <h3>Start Empty Workout</h3>
+                <p class="text-muted">Build as you go</p>
+            </div>
+            <i class="fas fa-chevron-right text-muted"></i>
+        </a>
+
+        <a href="{% url 'template_selector' %}" class="workout-option-card">
+            <div class="option-icon bg-purple"><i class="fas fa-clipboard-list"></i></div>
+            <div class="option-text">
+                <h3>Choose Template</h3>
+                <p class="text-muted">Start from a saved routine</p>
+            </div>
+            <i class="fas fa-chevron-right text-muted"></i>
+        </a>
+    </div>
+
+    <!-- Recent Templates -->
+    {% if templates %}
+    <div class="section">
+        <h3 class="section-title">Recent Templates</h3>
+        <div class="template-list">
+            {% for tmpl in templates %}
+            <a href="{% url 'workout_builder_template' tmpl.id %}" class="template-card">
+                <div class="template-info">
+                    <h4>{{ tmpl.name }}</h4>
+                    <span class="text-muted">{{ tmpl.exercise_count }} exercises &middot; ~{{ tmpl.estimated_duration|duration_format }}</span>
+                </div>
+                {% if tmpl.last_used %}
+                <span class="text-xs text-muted">{{ tmpl.last_used|timesince }} ago</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

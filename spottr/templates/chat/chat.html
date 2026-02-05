@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - {{ chat_name }}{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Chat Header -->
+    <div class="chat-header">
+        <a href="{% url 'groups' %}" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div class="chat-header-avatar">
+            <span class="avatar-emoji-sm">{{ chat_avatar }}</span>
+        </div>
+        <div class="chat-header-info">
+            <span class="chat-header-name">{{ chat_name }}</span>
+            {% if member_count %}
+            <span class="chat-header-meta">{{ member_count }} members</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chatMessages">
+        {% for msg in messages %}
+        <div class="message {% if msg.sender == request.user %}message-own{% endif %}">
+            {% if msg.sender != request.user %}
+            <div class="message-avatar">
+                <span class="avatar-emoji-xs">{{ msg.sender.profile.avatar_emoji }}</span>
+            </div>
+            {% endif %}
+            <div class="message-bubble {% if msg.sender == request.user %}bubble-own{% else %}bubble-other{% endif %}">
+                {% if msg.sender != request.user and chat_type == 'group' %}
+                <span class="message-sender">{{ msg.sender.profile.display_name|default:msg.sender.username }}</span>
+                {% endif %}
+                <p class="message-text">{{ msg.content }}</p>
+                {% if msg.image %}
+                <img src="{{ msg.image.url }}" alt="Shared image" class="message-img">
+                {% endif %}
+                <span class="message-time">{{ msg.created_at|timesince }} ago</span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <p class="text-muted">No messages yet. Start the conversation!</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Message Input -->
+    <form class="chat-input-bar" method="post" action="{% url 'send_message' chat_type chat_id %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <button type="button" class="icon-btn" onclick="document.getElementById('chatImage').click()">
+            <i class="fas fa-image"></i>
+        </button>
+        <input type="file" id="chatImage" name="image" accept="image/*" class="hidden">
+        <input type="text" name="content" class="chat-text-input" placeholder="Type a message..." autocomplete="off" required>
+        <button type="submit" class="send-btn">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const msgs = document.getElementById('chatMessages');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+});
+</script>
+{% endblock %}

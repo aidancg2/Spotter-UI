@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - Streaks{% endblock %}
+
+{% block content %}
+<div class="page-container streaks-page">
+    <div class="page-top-bar">
+        <a href="{% url 'feed' %}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h2 class="page-title">Your Streak</h2>
+        <div></div>
+    </div>
+
+    <!-- Mascot -->
+    <div class="mascot-section">
+        <div class="mascot {% if streak_active %}mascot-happy{% else %}mascot-sad{% endif %}">
+            {% if streak_active %}
+            <div class="mascot-emoji">🐆</div>
+            <div class="confetti-container">
+                <div class="confetti c1"></div>
+                <div class="confetti c2"></div>
+                <div class="confetti c3"></div>
+                <div class="confetti c4"></div>
+                <div class="confetti c5"></div>
+            </div>
+            {% else %}
+            <div class="mascot-emoji">😿</div>
+            {% endif %}
+        </div>
+        <p class="mascot-message">
+            {% if streak_active %}Keep it going! You're on fire!{% else %}Post today to keep your streak alive!{% endif %}
+        </p>
+    </div>
+
+    <!-- Current Streak Card -->
+    <div class="streak-card-main">
+        <div class="streak-card-top">
+            <div class="streak-number-large">
+                <i class="fas fa-fire streak-fire-lg"></i>
+                <span>{{ profile.current_streak }}</span>
+            </div>
+            <span class="streak-label">Day Streak</span>
+        </div>
+        <div class="weekly-progress">
+            <div class="week-header">
+                <span>This Week</span>
+                <span>{{ weekly_post_count }}/{{ profile.workout_frequency }}</span>
+            </div>
+            <div class="week-days">
+                {% for day in week_days %}
+                <div class="week-day {% if day.has_activity %}day-active{% endif %} {% if day.is_today %}day-today{% endif %}">
+                    <span class="week-day-label">{{ day.day_name }}</span>
+                    <div class="week-day-dot {% if day.has_activity %}dot-filled{% endif %}">
+                        {% if day.has_activity %}<i class="fas fa-check"></i>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="streak-stats-row">
+        <div class="streak-stat-card">
+            <i class="fas fa-fire text-orange"></i>
+            <span class="stat-value">{{ profile.longest_streak }}</span>
+            <span class="stat-label">Longest Streak</span>
+        </div>
+        <div class="streak-stat-card">
+            <i class="fas fa-dumbbell text-cyan"></i>
+            <span class="stat-value">{{ profile.total_workouts }}</span>
+            <span class="stat-label">Total Workouts</span>
+        </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="section">
+        <h3 class="section-title"><i class="fas fa-medal"></i> Achievements</h3>
+        <div class="achievements-list">
+            {% for ua in achievements %}
+            <div class="achievement-card {% if ua.unlocked %}achievement-unlocked{% endif %}">
+                <div class="achievement-icon"><span>{{ ua.achievement.icon }}</span></div>
+                <div class="achievement-info">
+                    <span class="achievement-name">{{ ua.achievement.name }}</span>
+                    <span class="achievement-desc">{{ ua.achievement.description }}</span>
+                    {% if not ua.unlocked %}
+                    <div class="achievement-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ ua.progress_percent }}%"></div>
+                        </div>
+                        <span class="progress-text">{{ ua.progress }}/{{ ua.achievement.requirement_value }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if ua.unlocked %}<i class="fas fa-check-circle text-green"></i>{% endif %}
+            </div>
+            {% empty %}
+            <p class="text-muted text-center">Complete workouts to unlock achievements!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if group_streaks %}
+    <div class="section">
+        <h3 class="section-title"><i class="fas fa-users"></i> Group Streaks</h3>
+        <div class="group-streaks-list">
+            {% for gs in group_streaks %}
+            <div class="group-streak-card">
+                <div class="group-streak-info">
+                    <span class="group-streak-name">{{ gs.group.name }}</span>
+                    <span class="text-muted">{{ gs.active_members }} active</span>
+                </div>
+                <div class="group-streak-number">
+                    <i class="fas fa-fire text-orange"></i>
+                    <span>{{ gs.current_streak }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

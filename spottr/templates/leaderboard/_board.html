@@ -1,0 +1,73 @@
+{% load core_tags %}
+
+{% if not leaderboard %}
+<div class="empty-state">
+    <div class="empty-icon"><i class="fas fa-trophy"></i></div>
+    <h3>No rankings yet</h3>
+    <p>{% if tab == 'gym' %}Join a gym to see leaderboard rankings{% else %}Add friends to see how you stack up{% endif %}</p>
+</div>
+{% else %}
+
+<!-- Podium -->
+<div class="podium-section">
+    {% if leaderboard|length >= 2 %}
+    <!-- 2nd Place -->
+    <div class="podium-item podium-second">
+        <div class="podium-avatar silver-glow">
+            <span class="avatar-emoji-lg">{{ leaderboard.1.profile.avatar_emoji }}</span>
+        </div>
+        <span class="podium-name">{{ leaderboard.1.profile.display_name|default:leaderboard.1.user.username }}</span>
+        <span class="podium-streak"><i class="fas fa-fire"></i> {{ leaderboard.1.streak }}</span>
+        <div class="podium-pedestal silver">2</div>
+    </div>
+    {% endif %}
+
+    {% if leaderboard|length >= 1 %}
+    <!-- 1st Place -->
+    <div class="podium-item podium-first">
+        <div class="podium-crown"><i class="fas fa-crown"></i></div>
+        <div class="podium-avatar gold-glow">
+            <span class="avatar-emoji-lg">{{ leaderboard.0.profile.avatar_emoji }}</span>
+        </div>
+        <span class="podium-name">{{ leaderboard.0.profile.display_name|default:leaderboard.0.user.username }}</span>
+        <span class="podium-streak"><i class="fas fa-fire"></i> {{ leaderboard.0.streak }}</span>
+        <div class="podium-pedestal gold">1</div>
+    </div>
+    {% endif %}
+
+    {% if leaderboard|length >= 3 %}
+    <!-- 3rd Place -->
+    <div class="podium-item podium-third">
+        <div class="podium-avatar bronze-glow">
+            <span class="avatar-emoji-lg">{{ leaderboard.2.profile.avatar_emoji }}</span>
+        </div>
+        <span class="podium-name">{{ leaderboard.2.profile.display_name|default:leaderboard.2.user.username }}</span>
+        <span class="podium-streak"><i class="fas fa-fire"></i> {{ leaderboard.2.streak }}</span>
+        <div class="podium-pedestal bronze">3</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Full Rankings -->
+<div class="rankings-list">
+    {% for entry in leaderboard %}
+    <div class="ranking-item {% if entry.is_current_user %}ranking-current{% endif %}">
+        <span class="ranking-pos">{{ entry.rank }}</span>
+        <div class="ranking-avatar">
+            <span class="avatar-emoji-sm">{{ entry.profile.avatar_emoji }}</span>
+        </div>
+        <div class="ranking-info">
+            <span class="ranking-name">
+                {{ entry.profile.display_name|default:entry.user.username }}
+                {% if entry.is_current_user %}<span class="you-badge">You</span>{% endif %}
+            </span>
+            <span class="ranking-level">Lvl {{ entry.level }}</span>
+        </div>
+        <div class="ranking-stats">
+            <span class="ranking-workouts">{{ entry.weekly_workouts }} this week</span>
+            <span class="ranking-streak"><i class="fas fa-fire"></i> {{ entry.streak }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

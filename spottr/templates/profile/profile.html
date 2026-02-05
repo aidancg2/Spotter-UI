@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - {{ profile.display_name|default:profile_user.username }}{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Cover + Avatar -->
+    <div class="profile-cover">
+        <div class="cover-gradient"></div>
+        <div class="profile-avatar-large">
+            {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="" class="avatar-img-lg">
+            {% else %}
+                <span class="avatar-emoji-xl">{{ profile.avatar_emoji }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- User Info -->
+    <div class="profile-info">
+        <h2 class="profile-name">{{ profile.display_name|default:profile_user.username }}</h2>
+        <p class="profile-username">@{{ profile_user.username }}</p>
+        {% if profile.bio %}
+        <p class="profile-bio">{{ profile.bio }}</p>
+        {% endif %}
+
+        {% if not is_own_profile %}
+        <div class="profile-actions">
+            <button class="btn {% if is_following %}btn-ghost{% else %}btn-primary{% endif %} btn-sm"
+                    onclick="toggleFollow({{ profile_user.id }})">
+                {% if is_following %}Following{% else %}Follow{% endif %}
+            </button>
+            <a href="{% url 'chat' 'dm' profile_user.id %}" class="btn btn-ghost btn-sm">
+                <i class="fas fa-comment"></i> Message
+            </a>
+        </div>
+        {% else %}
+        <button class="btn btn-ghost btn-sm" onclick="openModal('editProfileModal')">
+            <i class="fas fa-pen"></i> Edit Profile
+        </button>
+        {% endif %}
+
+        <!-- Stats Row -->
+        <div class="profile-stats">
+            <div class="profile-stat">
+                <span class="stat-number">{{ profile.friends_count }}</span>
+                <span class="stat-text">Friends</span>
+            </div>
+            <div class="profile-stat">
+                <span class="stat-number">{{ profile.following_count }}</span>
+                <span class="stat-text">Following</span>
+            </div>
+            <div class="profile-stat">
+                <span class="stat-number">{{ profile.followers_count }}</span>
+                <span class="stat-text">Followers</span>
+            </div>
+        </div>
+
+        <!-- Workout Stats -->
+        <div class="profile-workout-stats">
+            <div class="workout-stat-card">
+                <i class="fas fa-dumbbell"></i>
+                <span class="stat-value">{{ profile.total_workouts }}</span>
+                <span class="stat-label">Workouts</span>
+            </div>
+            <div class="workout-stat-card">
+                <i class="fas fa-layer-group"></i>
+                <span class="stat-value">{{ profile.total_sets }}</span>
+                <span class="stat-label">Sets</span>
+            </div>
+            <div class="workout-stat-card">
+                <i class="fas fa-weight-hanging"></i>
+                <span class="stat-value">{{ profile.total_weight|floatformat:0 }}</span>
+                <span class="stat-label">lbs Lifted</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Tabs -->
+    <div class="tab-bar">
+        <a href="?tab=posts" class="tab-item {% if tab == 'posts' %}active{% endif %}">Posts</a>
+        <a href="?tab=calendar" class="tab-item {% if tab == 'calendar' %}active{% endif %}">Calendar</a>
+        <a href="?tab=recent" class="tab-item {% if tab == 'recent' %}active{% endif %}">Recent</a>
+        <a href="?tab=prs" class="tab-item {% if tab == 'prs' %}active{% endif %}">PRs</a>
+    </div>
+
+    {% if tab == 'posts' %}
+    <div class="profile-posts-grid">
+        {% for post in posts %}
+        <div class="profile-post-card">
+            {% if post.image %}
+                <img src="{{ post.image.url }}" alt="" class="grid-post-img">
+            {% else %}
+                <div class="grid-post-placeholder">
+                    {% if post.post_type == 'workout' %}<i class="fas fa-dumbbell"></i>
+                    {% elif post.post_type == 'pr' %}<i class="fas fa-trophy"></i>
+                    {% elif post.post_type == 'checkin' %}<i class="fas fa-map-pin"></i>
+                    {% else %}<i class="fas fa-pen"></i>{% endif %}
+                </div>
+            {% endif %}
+            <div class="grid-post-overlay">
+                <span><i class="fas fa-heart"></i> {{ post.heart_count }}</span>
+                <span><i class="fas fa-comment"></i> {{ post.comment_count }}</span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state-full"><p class="text-muted">No posts yet</p></div>
+        {% endfor %}
+    </div>
+
+    {% elif tab == 'calendar' %}
+    <div class="calendar-section">
+        <div class="calendar-nav">
+            {% if calendar_month > 1 %}
+            <a href="?tab=calendar&month={{ calendar_month|add:'-1' }}&year={{ calendar_year }}" class="icon-btn"><i class="fas fa-chevron-left"></i></a>
+            {% else %}
+            <a href="?tab=calendar&month=12&year={{ calendar_year|add:'-1' }}" class="icon-btn"><i class="fas fa-chevron-left"></i></a>
+            {% endif %}
+            <span class="calendar-title">{{ calendar_month_name }} {{ calendar_year }}</span>
+            {% if calendar_month < 12 %}
+            <a href="?tab=calendar&month={{ calendar_month|add:'1' }}&year={{ calendar_year }}" class="icon-btn"><i class="fas fa-chevron-right"></i></a>
+            {% else %}
+            <a href="?tab=calendar&month=1&year={{ calendar_year|add:'1' }}" class="icon-btn"><i class="fas fa-chevron-right"></i></a>
+            {% endif %}
+        </div>
+        <div class="calendar-header-row">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+        <div class="calendar-grid">
+            {% for week in calendar_weeks %}
+            {% for day in week %}
+            <div class="calendar-day {% if day in workout_dates %}has-workout{% endif %} {% if day in post_dates %}has-post{% endif %} {% if day == 0 %}empty-day{% endif %}">
+                {% if day != 0 %}
+                <span class="day-number">{{ day }}</span>
+                {% if day in workout_dates %}<span class="day-dot workout-dot"></span>{% endif %}
+                {% if day in post_dates %}<span class="day-dot post-dot"></span>{% endif %}
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% endfor %}
+        </div>
+        <div class="calendar-legend">
+            <span class="legend-item"><span class="legend-dot workout-dot"></span> Workout</span>
+            <span class="legend-item"><span class="legend-dot post-dot"></span> Post</span>
+        </div>
+    </div>
+
+    {% elif tab == 'recent' %}
+    <div class="recent-workouts">
+        {% for workout in recent_workouts %}
+        <div class="recent-workout-card">
+            <div class="workout-card-header">
+                <h4>{{ workout.name }}</h4>
+                <span class="text-muted">{{ workout.started_at|timesince }} ago</span>
+            </div>
+            <div class="workout-card-stats">
+                <span><i class="fas fa-list"></i> {{ workout.exercise_count }} exercises</span>
+                <span><i class="fas fa-layer-group"></i> {{ workout.set_count }} sets</span>
+                <span><i class="fas fa-clock"></i> {{ workout.duration_minutes|duration_format }}</span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state-sm"><p class="text-muted">No workouts yet</p></div>
+        {% endfor %}
+    </div>
+
+    {% elif tab == 'prs' %}
+    <div class="pr-list">
+        {% for pr in prs %}
+        <div class="pr-card">
+            <div class="pr-card-header">
+                <span class="pr-exercise-name">{{ pr.exercise.name }}</span>
+                <span class="pr-weight-value">{{ pr.weight|floatformat:0 }} lbs</span>
+            </div>
+            <div class="pr-card-meta">
+                <span class="text-muted">{{ pr.reps }} rep{{ pr.reps|pluralize }}</span>
+                <span class="text-muted">{{ pr.achieved_at|date:"M d, Y" }}</span>
+            </div>
+            {% if pr.video %}
+            <div class="pr-video-badge"><i class="fas fa-video"></i> Video verified</div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="empty-state-sm"><p class="text-muted">No personal records yet</p></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+{% if is_own_profile %}
+<div class="modal-overlay" id="editProfileModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Edit Profile</h2>
+            <button class="modal-close" onclick="closeModal('editProfileModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="{% url 'edit_profile' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Display Name</label>
+                    <input type="text" name="display_name" value="{{ profile.display_name }}" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Bio</label>
+                    <textarea name="bio" class="form-input" rows="3" maxlength="150">{{ profile.bio }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Avatar Emoji</label>
+                    <input type="text" name="avatar_emoji" value="{{ profile.avatar_emoji }}" class="form-input" maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Profile Picture</label>
+                    <input type="file" name="avatar" accept="image/*" class="form-input">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('editProfileModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

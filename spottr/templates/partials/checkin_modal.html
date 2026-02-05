@@ -1,0 +1,64 @@
+{% load static %}
+<div class="modal-overlay" id="checkinModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Quick Check-in</h2>
+            <button class="modal-close" onclick="closeModal('checkinModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form method="post" action="{% url 'create_checkin' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="modal-body">
+                <!-- Camera Preview -->
+                <div class="camera-preview" onclick="document.getElementById('checkin-image').click()">
+                    <div class="camera-placeholder" id="checkinPreviewPlaceholder">
+                        <i class="fas fa-camera"></i>
+                        <span>Tap to add photo</span>
+                    </div>
+                    <img id="checkinPreviewImg" class="preview-img hidden" alt="Preview">
+                    <input type="file" id="checkin-image" name="image" accept="image/*" class="hidden" onchange="previewImage(this, 'checkinPreviewImg', 'checkinPreviewPlaceholder')">
+                </div>
+
+                <!-- Gym Selection -->
+                <div class="form-group">
+                    <label class="form-label">Gym</label>
+                    <select name="gym" class="form-input">
+                        <option value="">Select gym...</option>
+                        {% for gym_opt in checkin_form.gym.field.queryset %}
+                        <option value="{{ gym_opt.id }}">{{ gym_opt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Activities -->
+                <div class="form-group">
+                    <label class="form-label">What are you hitting?</label>
+                    <div class="activity-grid">
+                        {% for value, label in checkin_form.activities.field.choices %}
+                        <label class="activity-chip">
+                            <input type="checkbox" name="activities" value="{{ value }}">
+                            <span class="chip-label">{{ label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Other Activity -->
+                <div class="form-group">
+                    <input type="text" name="other_activity" class="form-input" placeholder="Other activity...">
+                </div>
+
+                <!-- Caption -->
+                <div class="form-group">
+                    <label class="form-label">Caption</label>
+                    <textarea name="caption" class="form-input" rows="2" placeholder="What are you hitting today?"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('checkinModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Check In</button>
+            </div>
+        </form>
+    </div>
+</div>

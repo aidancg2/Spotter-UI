@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - Leaderboard{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <!-- Tabs -->
+    <div class="tab-bar">
+        <a href="?tab=gym" class="tab-item {% if tab == 'gym' %}active{% endif %}">My Gym</a>
+        <a href="?tab=friends" class="tab-item {% if tab == 'friends' %}active{% endif %}">Friends</a>
+    </div>
+
+    {% with leaderboard=gym_leaderboard %}
+    {% if tab == 'friends' %}
+    {% with leaderboard=friends_leaderboard %}
+    {% include 'leaderboard/_board.html' %}
+    {% endwith %}
+    {% else %}
+    {% include 'leaderboard/_board.html' %}
+    {% endif %}
+    {% endwith %}
+</div>
+{% endblock %}

@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - Groups{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <!-- Pending Invitations -->
+    {% if pending_invites %}
+    <div class="card collapsible-card">
+        <button class="card-collapse-header" onclick="toggleCollapse(this)">
+            <h3 class="card-title">
+                <i class="fas fa-envelope"></i> Pending Invitations
+                <span class="badge">{{ pending_invites|length }}</span>
+            </h3>
+            <i class="fas fa-chevron-down collapse-icon"></i>
+        </button>
+        <div class="collapse-content">
+            {% for invite in pending_invites %}
+            <div class="invite-card">
+                <div class="invite-header">
+                    <div class="invite-avatar">
+                        <span class="avatar-emoji-sm">{{ invite.from_user.profile.avatar_emoji }}</span>
+                    </div>
+                    <div class="invite-info">
+                        <span class="invite-name">{{ invite.from_user.profile.display_name|default:invite.from_user.username }}</span>
+                        <span class="invite-bio">{{ invite.from_user.profile.bio|truncatewords:8 }}</span>
+                        {% if invite.workout_type %}
+                        <span class="invite-type"><i class="fas fa-dumbbell"></i> {{ invite.workout_type }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if invite.message %}
+                <p class="invite-message">"{{ invite.message }}"</p>
+                {% endif %}
+                <div class="invite-actions">
+                    <form method="post" action="{% url 'respond_invite' invite.id %}" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="accept">
+                        <button type="submit" class="btn btn-primary btn-sm">Accept</button>
+                    </form>
+                    <form method="post" action="{% url 'respond_invite' invite.id %}" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="decline">
+                        <button type="submit" class="btn btn-ghost btn-sm">Ignore</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Search -->
+    <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" class="search-input" placeholder="Search friends & groups..." id="groupSearch" oninput="filterGroupItems(this.value)">
+    </div>
+
+    <!-- Friends Section -->
+    <div class="section">
+        <div class="section-header-row">
+            <h3 class="section-title">Friends</h3>
+        </div>
+        <div class="friends-list" id="friendsList">
+            {% for friend in friends %}
+            <div class="friend-item searchable" data-name="{{ friend.profile.display_name|default:friend.username|lower }}">
+                <a href="{% url 'user_profile' friend.username %}" class="friend-avatar">
+                    {% if friend.profile.avatar %}
+                        <img src="{{ friend.profile.avatar.url }}" alt="" class="avatar-img-sm">
+                    {% else %}
+                        <span class="avatar-emoji-sm">{{ friend.profile.avatar_emoji }}</span>
+                    {% endif %}
+                    <span class="status-dot" style="background: {{ friend.profile.status|status_color }}"></span>
+                </a>
+                <div class="friend-info">
+                    <span class="friend-name">{{ friend.profile.display_name|default:friend.username }}</span>
+                    <span class="friend-status text-muted">
+                        {% if friend.profile.status == 'working-out' %}
+                            <i class="fas fa-dumbbell text-orange"></i> Working out
+                        {% elif friend.profile.status == 'online' %}
+                            Online
+                        {% else %}
+                            Offline
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="friend-actions">
+                    {% if friend.profile.status != 'working-out' %}
+                    <button class="icon-btn" onclick="nudgeUser({{ friend.id }})" title="Zap">
+                        <i class="fas fa-bolt text-yellow"></i>
+                    </button>
+                    {% endif %}
+                    <a href="{% url 'chat' 'dm' friend.id %}" class="icon-btn" title="Message">
+                        <i class="fas fa-comment"></i>
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted text-center py-4">No friends yet. Follow some people!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Groups Section -->
+    <div class="section">
+        <div class="section-header-row">
+            <h3 class="section-title">Groups</h3>
+            <div class="section-actions">
+                <button class="btn btn-primary btn-sm" onclick="openModal('createGroupModal')">
+                    <i class="fas fa-plus"></i> Create
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="openModal('joinGroupModal')">
+                    <i class="fas fa-sign-in-alt"></i> Join
+                </button>
+            </div>
+        </div>
+        <div class="groups-list" id="groupsList">
+            {% for group in user_groups %}
+            <a href="{% url 'chat' 'group' group.id %}" class="group-item searchable" data-name="{{ group.name|lower }}">
+                <div class="group-avatar">
+                    <span class="avatar-emoji-sm">{{ group.avatar_emoji }}</span>
+                </div>
+                <div class="group-info">
+                    <span class="group-name">{{ group.name }}</span>
+                    <span class="group-members text-muted">{{ group.member_count }} members</span>
+                </div>
+                {% if group.unread_count %}
+                <span class="unread-badge">{{ group.unread_count }}</span>
+                {% endif %}
+            </a>
+            {% empty %}
+            <p class="text-muted text-center py-4">No groups yet. Create one or join with a code!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Invite to Workout (Friends) -->
+    <div class="section">
+        <button class="btn btn-gradient btn-full" onclick="openModal('friendInviteModal')">
+            <i class="fas fa-dumbbell"></i> Invite Friends to Workout
+        </button>
+    </div>
+</div>
+
+<!-- Create Group Modal -->
+<div class="modal-overlay" id="createGroupModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Create Group</h2>
+            <button class="modal-close" onclick="closeModal('createGroupModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="{% url 'create_group' %}">
+            {% csrf_token %}
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Group Name</label>
+                    {{ group_form.name }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    {{ group_form.description }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Add Members</label>
+                    <div class="member-select">
+                        {% for friend in friends %}
+                        <label class="member-option">
+                            <input type="checkbox" name="members" value="{{ friend.id }}">
+                            <span class="avatar-emoji-xs">{{ friend.profile.avatar_emoji }}</span>
+                            <span>{{ friend.profile.display_name|default:friend.username }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('createGroupModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Join Group Modal -->
+<div class="modal-overlay" id="joinGroupModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h2 class="modal-title">Join Group</h2>
+            <button class="modal-close" onclick="closeModal('joinGroupModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="{% url 'join_group' %}">
+            {% csrf_token %}
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Group Code</label>
+                    {{ join_form.join_code }}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('joinGroupModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Join</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Friend Invite Modal -->
+<div class="modal-overlay" id="friendInviteModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Invite to Workout</h2>
+            <button class="modal-close" onclick="closeModal('friendInviteModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="{% url 'send_friend_invite' %}">
+            {% csrf_token %}
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Select Friends</label>
+                    <div class="member-select">
+                        {% for friend in friends %}
+                        <label class="member-option">
+                            <input type="checkbox" name="friends" value="{{ friend.id }}">
+                            <span class="avatar-emoji-xs">{{ friend.profile.avatar_emoji }}</span>
+                            <span>{{ friend.profile.display_name|default:friend.username }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Workout Type</label>
+                    {{ invite_form.workout_type }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message</label>
+                    {{ invite_form.message }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Spots</label>
+                    {{ invite_form.spots }}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('friendInviteModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Send Invites</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

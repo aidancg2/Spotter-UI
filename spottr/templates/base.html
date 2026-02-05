@@ -1,0 +1,126 @@
+{% load static %}
+{% load core_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Spottr{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        {% if user.is_authenticated and show_header %}
+        <!-- Top Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <a href="{% url 'feed' %}" class="logo-link">
+                    <span class="logo-icon">
+                        <i class="fas fa-dumbbell"></i>
+                    </span>
+                    <span class="logo-text">Spottr</span>
+                </a>
+            </div>
+            <div class="header-right">
+                <a href="{% url 'streaks' %}" class="streak-badge" title="View streak details">
+                    <i class="fas fa-fire streak-fire"></i>
+                    <span class="streak-count">{{ user_streak }}</span>
+                </a>
+                <a href="{% url 'my_profile' %}" class="profile-avatar-btn">
+                    {% if user_profile.avatar %}
+                        <img src="{{ user_profile.avatar.url }}" alt="Profile" class="avatar-img-sm">
+                    {% else %}
+                        <span class="avatar-emoji-sm">{{ user_profile.avatar_emoji }}</span>
+                    {% endif %}
+                </a>
+            </div>
+        </header>
+        {% endif %}
+
+        <!-- Main Content -->
+        <main class="app-main {% if user.is_authenticated and show_header %}has-header has-nav{% endif %}">
+            {% block content %}{% endblock %}
+        </main>
+
+        {% if user.is_authenticated and show_nav %}
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <a href="{% url 'feed' %}" class="nav-item {% if active_tab == 'feed' %}active{% endif %}">
+                <i class="fas fa-home"></i>
+                <span>Feed</span>
+            </a>
+            <a href="{% url 'gym' %}" class="nav-item {% if active_tab == 'gym' %}active{% endif %}">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Gyms</span>
+            </a>
+            <button class="nav-item plus-btn" onclick="togglePlusMenu()">
+                <div class="plus-icon-wrap">
+                    <i class="fas fa-plus"></i>
+                </div>
+            </button>
+            <a href="{% url 'leaderboard' %}" class="nav-item {% if active_tab == 'leaderboard' %}active{% endif %}">
+                <i class="fas fa-trophy"></i>
+                <span>Ranks</span>
+            </a>
+            <a href="{% url 'groups' %}" class="nav-item {% if active_tab == 'groups' %}active{% endif %}">
+                <i class="fas fa-users"></i>
+                <span>Groups</span>
+                {% if pending_invites_count %}
+                <span class="nav-badge">{{ pending_invites_count }}</span>
+                {% endif %}
+            </a>
+        </nav>
+
+        <!-- Plus Menu Overlay -->
+        <div class="plus-menu-overlay" id="plusMenuOverlay" onclick="closePlusMenu()">
+            <div class="plus-menu" onclick="event.stopPropagation()">
+                <button class="plus-menu-item" onclick="openModal('checkinModal')">
+                    <div class="plus-menu-icon checkin-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="plus-menu-text">
+                        <span class="plus-menu-title">Quick Check-in</span>
+                        <span class="plus-menu-desc">Snap a pic & check in</span>
+                    </div>
+                </button>
+                <button class="plus-menu-item" onclick="openModal('postModal')">
+                    <div class="plus-menu-icon post-icon">
+                        <i class="fas fa-pen"></i>
+                    </div>
+                    <div class="plus-menu-text">
+                        <span class="plus-menu-title">Post</span>
+                        <span class="plus-menu-desc">Share with the community</span>
+                    </div>
+                </button>
+                <a href="{% url 'track_workout' %}" class="plus-menu-item">
+                    <div class="plus-menu-icon workout-icon">
+                        <i class="fas fa-dumbbell"></i>
+                    </div>
+                    <div class="plus-menu-text">
+                        <span class="plus-menu-title">Log Workout</span>
+                        <span class="plus-menu-desc">Track your session</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Check-in Modal -->
+        {% include 'partials/checkin_modal.html' %}
+
+        <!-- Post Modal -->
+        {% include 'partials/post_modal.html' %}
+
+        <!-- Busy Level Modal -->
+        {% include 'partials/busy_modal.html' %}
+        {% endif %}
+    </div>
+
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
