@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Spottr - Sign Up{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="auth-logo-icon">
+                <i class="fas fa-dumbbell"></i>
+            </div>
+            <h1 class="auth-logo-text">Spottr</h1>
+            <p class="auth-tagline">Join the community</p>
+        </div>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div class="form-group">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <div class="field-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ field.errors.0 }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+        </form>
+
+        <p class="auth-footer">
+            Already have an account? <a href="{% url 'login' %}" class="auth-link">Log In</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

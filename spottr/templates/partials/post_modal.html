@@ -1,0 +1,75 @@
+{% load static %}
+<div class="modal-overlay" id="postModal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h2 class="modal-title">Create Post</h2>
+            <button class="modal-close" onclick="closeModal('postModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form method="post" action="{% url 'create_post' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="modal-body">
+                <!-- Content -->
+                <div class="form-group">
+                    <textarea name="content" class="form-input post-textarea" rows="4" placeholder="What's on your mind?"></textarea>
+                </div>
+
+                <!-- Media -->
+                <div class="form-group">
+                    <label class="media-upload-btn" onclick="document.getElementById('post-image').click()">
+                        <i class="fas fa-image"></i>
+                        <span>Add Photo</span>
+                    </label>
+                    <input type="file" id="post-image" name="image" accept="image/*" class="hidden" onchange="previewImage(this, 'postPreviewImg', 'postPreviewPlaceholder')">
+                    <div id="postPreviewPlaceholder" class="hidden"></div>
+                    <img id="postPreviewImg" class="preview-img-sm hidden" alt="Preview">
+                </div>
+
+                <!-- Hashtags -->
+                <div class="form-group">
+                    <label class="form-label">Hashtags</label>
+                    <input type="text" name="hashtags" class="form-input" placeholder="#fitness #gym #workout">
+                    <div class="suggested-tags">
+                        <span class="tag-chip" onclick="addHashtag(this, '#fitness')">#fitness</span>
+                        <span class="tag-chip" onclick="addHashtag(this, '#gym')">#gym</span>
+                        <span class="tag-chip" onclick="addHashtag(this, '#workout')">#workout</span>
+                        <span class="tag-chip" onclick="addHashtag(this, '#gains')">#gains</span>
+                        <span class="tag-chip" onclick="addHashtag(this, '#pr')">#pr</span>
+                        <span class="tag-chip" onclick="addHashtag(this, '#fitfam')">#fitfam</span>
+                    </div>
+                </div>
+
+                <!-- Poll Section -->
+                <div class="form-group">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="togglePoll()">
+                        <i class="fas fa-poll"></i> Add Poll
+                    </button>
+                    <div id="pollSection" class="hidden poll-section">
+                        <input type="hidden" name="has_poll" id="hasPoll" value="">
+                        <input type="text" name="poll_question" class="form-input mb-2" placeholder="Ask a question...">
+                        <input type="text" name="poll_option_1" class="form-input mb-2" placeholder="Option 1">
+                        <input type="text" name="poll_option_2" class="form-input mb-2" placeholder="Option 2">
+                        <input type="text" name="poll_option_3" class="form-input mb-2" placeholder="Option 3 (optional)">
+                        <input type="text" name="poll_option_4" class="form-input mb-2" placeholder="Option 4 (optional)">
+                    </div>
+                </div>
+
+                <!-- PR Milestone -->
+                <div class="form-group">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="togglePR()">
+                        <i class="fas fa-trophy"></i> Add PR / Milestone
+                    </button>
+                    <div id="prSection" class="hidden pr-section">
+                        <input type="text" name="pr_exercise" class="form-input mb-2" placeholder="Exercise name (e.g. Bench Press)">
+                        <input type="number" name="pr_weight" class="form-input" placeholder="Weight (lbs)">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('postModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Post</button>
+            </div>
+        </form>
+    </div>
+</div>

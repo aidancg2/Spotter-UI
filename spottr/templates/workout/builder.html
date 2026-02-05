@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - {{ workout.name }}{% endblock %}
+
+{% block content %}
+<div class="page-container workout-builder-page">
+    <!-- Workout Header -->
+    <div class="workout-header-bar">
+        <div class="workout-header-left">
+            <a href="{% url 'track_workout' %}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+            <div>
+                <h2 class="workout-title">{{ workout.name }}</h2>
+                <div class="workout-timer" id="workoutTimer">
+                    <i class="fas fa-clock"></i>
+                    <span id="timerDisplay">00:00</span>
+                </div>
+            </div>
+        </div>
+        <form method="post" action="{% url 'complete_workout' workout.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-green btn-sm">Finish</button>
+        </form>
+    </div>
+
+    <!-- Exercises -->
+    <div class="exercise-list">
+        {% for we in workout_exercises %}
+        <div class="exercise-card">
+            <div class="exercise-header">
+                <h3 class="exercise-name">{{ we.exercise.name }}</h3>
+                <span class="exercise-category badge-{{ we.exercise.category }}">{{ we.exercise.get_category_display }}</span>
+            </div>
+
+            <!-- Sets Table -->
+            <div class="sets-table">
+                <div class="sets-header">
+                    <span class="set-col-num">Set</span>
+                    <span class="set-col">Previous</span>
+                    <span class="set-col">lbs</span>
+                    <span class="set-col">Reps</span>
+                    <span class="set-col-check"></span>
+                </div>
+                {% for set in we.sets.all %}
+                <div class="set-row {% if set.completed %}set-completed{% endif %}" data-set-id="{{ set.id }}">
+                    <span class="set-col-num">{{ set.set_number }}</span>
+                    <span class="set-col text-muted">-</span>
+                    <input type="number" class="set-input" value="{{ set.weight|default_if_none:'' }}"
+                           placeholder="0" onchange="updateSet({{ set.id }}, this)">
+                    <input type="number" class="set-input" value="{{ set.reps|default_if_none:'' }}"
+                           placeholder="0" onchange="updateSetReps({{ set.id }}, this)">
+                    <button class="set-check {% if set.completed %}checked{% endif %}"
+                            onclick="toggleSetComplete({{ set.id }}, this)">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Add Set -->
+            <form method="post" action="{% url 'add_set' we.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost btn-sm btn-full">+ Add Set</button>
+            </form>
+        </div>
+        {% empty %}
+        <div class="empty-state-sm">
+            <p class="text-muted">No exercises yet. Add one below!</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Add Exercise -->
+    <button class="btn btn-primary btn-full mt-4" onclick="openModal('addExerciseModal')">
+        <i class="fas fa-plus"></i> Add Exercise
+    </button>
+</div>
+
+<!-- Add Exercise Modal -->
+<div class="modal-overlay" id="addExerciseModal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h2 class="modal-title">Add Exercise</h2>
+            <button class="modal-close" onclick="closeModal('addExerciseModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <input type="text" class="form-input mb-3" placeholder="Search exercises..." id="exerciseSearch" oninput="filterExercises(this.value)">
+
+            <!-- Category Filter -->
+            <div class="category-filter mb-3">
+                <button class="tab-pill active" onclick="filterByCategory('all', this)">All</button>
+                {% for cat_val, cat_label in categories %}
+                <button class="tab-pill" onclick="filterByCategory('{{ cat_val }}', this)">{{ cat_label }}</button>
+                {% endfor %}
+            </div>
+
+            <div class="exercise-select-list" id="exerciseList">
+                {% for ex in exercises %}
+                <form method="post" action="{% url 'add_exercise' workout.id %}" class="exercise-select-item" data-name="{{ ex.name|lower }}" data-category="{{ ex.category }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="exercise_id" value="{{ ex.id }}">
+                    <button type="submit" class="exercise-select-btn">
+                        <div class="exercise-select-info">
+                            <span class="exercise-select-name">{{ ex.name }}</span>
+                            <span class="exercise-select-cat badge-{{ ex.category }}">{{ ex.get_category_display }}</span>
+                        </div>
+                        <i class="fas fa-plus text-cyan"></i>
+                    </button>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Workout Timer
+(function() {
+    const start = new Date('{{ workout.started_at|date:"c" }}');
+    const display = document.getElementById('timerDisplay');
+    function updateTimer() {
+        const diff = Math.floor((new Date() - start) / 1000);
+        const h = Math.floor(diff / 3600);
+        const m = Math.floor((diff % 3600) / 60);
+        const s = diff % 60;
+        if (h > 0) {
+            display.textContent = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        } else {
+            display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
+    }
+    setInterval(updateTimer, 1000);
+    updateTimer();
+})();
+</script>
+{% endblock %}

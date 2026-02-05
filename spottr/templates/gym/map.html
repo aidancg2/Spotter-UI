@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Spottr - Gyms{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if gym_detail %}
+    <!-- Enrolled Gym View -->
+    <div class="gym-header-card">
+        <div class="gym-header-top">
+            <div>
+                <h2 class="gym-name">{{ gym_detail.name }}</h2>
+                <p class="gym-address"><i class="fas fa-map-marker-alt"></i> {{ gym_detail.address }}</p>
+            </div>
+            <form method="post" action="{% url 'leave_gym' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost btn-sm">Leave</button>
+            </form>
+        </div>
+
+        <!-- Busy Level -->
+        <div class="busy-indicator" style="--busy-color: {{ gym_detail.busy_level|busy_color }}">
+            <div class="busy-dot"></div>
+            <span>{{ gym_detail.busy_level|busy_label }}</span>
+            <button class="btn btn-ghost btn-xs" onclick="openModal('busyModal')">Update</button>
+        </div>
+    </div>
+
+    <!-- Activity Breakdown -->
+    <div class="card">
+        <h3 class="card-title"><i class="fas fa-chart-bar"></i> Current Activity</h3>
+        <div class="activity-chart">
+            <div class="chart-bar-group">
+                <div class="chart-bar" style="--bar-height: {{ gym_detail.arms_count }}%; --bar-color: #3b82f6">
+                    <span class="bar-value">{{ gym_detail.arms_count }}</span>
+                </div>
+                <span class="bar-label">Arms</span>
+            </div>
+            <div class="chart-bar-group">
+                <div class="chart-bar" style="--bar-height: {{ gym_detail.legs_count }}%; --bar-color: #22c55e">
+                    <span class="bar-value">{{ gym_detail.legs_count }}</span>
+                </div>
+                <span class="bar-label">Legs</span>
+            </div>
+            <div class="chart-bar-group">
+                <div class="chart-bar" style="--bar-height: {{ gym_detail.cardio_count }}%; --bar-color: #f97316">
+                    <span class="bar-value">{{ gym_detail.cardio_count }}</span>
+                </div>
+                <span class="bar-label">Cardio</span>
+            </div>
+            <div class="chart-bar-group">
+                <div class="chart-bar" style="--bar-height: {{ gym_detail.classes_count }}%; --bar-color: #a855f7">
+                    <span class="bar-value">{{ gym_detail.classes_count }}</span>
+                </div>
+                <span class="bar-label">Classes</span>
+            </div>
+            <div class="chart-bar-group">
+                <div class="chart-bar" style="--bar-height: {{ gym_detail.other_count }}%; --bar-color: #6b7280">
+                    <span class="bar-value">{{ gym_detail.other_count }}</span>
+                </div>
+                <span class="bar-label">Other</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Lifters -->
+    <div class="card">
+        <h3 class="card-title"><i class="fas fa-medal"></i> Top Lifters</h3>
+        <div class="lifter-tabs">
+            <button class="tab-pill active" onclick="filterLifters('total')">Total</button>
+            <button class="tab-pill" onclick="filterLifters('squat')">Squat</button>
+            <button class="tab-pill" onclick="filterLifters('bench')">Bench</button>
+            <button class="tab-pill" onclick="filterLifters('deadlift')">Deadlift</button>
+        </div>
+        <div class="lifter-list">
+            {% for lifter in top_lifters %}
+            <div class="lifter-item">
+                <span class="lifter-rank">{{ forloop.counter }}</span>
+                <div class="lifter-avatar">
+                    {% if lifter.user.profile.avatar %}
+                        <img src="{{ lifter.user.profile.avatar.url }}" alt="" class="avatar-img-sm">
+                    {% else %}
+                        <span class="avatar-emoji-sm">{{ lifter.user.profile.avatar_emoji }}</span>
+                    {% endif %}
+                </div>
+                <span class="lifter-name">{{ lifter.user.profile.display_name|default:lifter.user.username }}</span>
+                <span class="lifter-weight" data-squat="{{ lifter.squat }}" data-bench="{{ lifter.bench }}" data-deadlift="{{ lifter.deadlift }}" data-total="{{ lifter.total }}">
+                    {{ lifter.total }} lbs
+                </span>
+            </div>
+            {% empty %}
+            <p class="text-muted text-center">No lifters yet</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Workout Buddies -->
+    <div class="card">
+        <div class="card-header-row">
+            <h3 class="card-title"><i class="fas fa-user-friends"></i> Workout Buddies</h3>
+            <button class="btn btn-primary btn-sm" onclick="openModal('gymInviteModal')">
+                <i class="fas fa-plus"></i> Post Invite
+            </button>
+        </div>
+
+        {% if invites %}
+        <div class="invite-list">
+            {% for invite in invites %}
+            <div class="invite-card">
+                <div class="invite-header">
+                    <div class="invite-avatar">
+                        <span class="avatar-emoji-sm">{{ invite.from_user.profile.avatar_emoji }}</span>
+                    </div>
+                    <div class="invite-info">
+                        <span class="invite-name">{{ invite.from_user.profile.display_name|default:invite.from_user.username }}</span>
+                        <span class="invite-type">{{ invite.workout_type }}</span>
+                    </div>
+                    <div class="invite-meta">
+                        <span class="invite-spots"><i class="fas fa-users"></i> {{ invite.spots }} spot{{ invite.spots|pluralize }}</span>
+                    </div>
+                </div>
+                {% if invite.message %}
+                <p class="invite-message">{{ invite.message }}</p>
+                {% endif %}
+                <div class="invite-actions">
+                    <form method="post" action="{% url 'respond_gym_invite' invite.id %}" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="accept">
+                        <button type="submit" class="btn btn-primary btn-sm">Join</button>
+                    </form>
+                    <form method="post" action="{% url 'respond_gym_invite' invite.id %}" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="decline">
+                        <button type="submit" class="btn btn-ghost btn-sm">Pass</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state-sm">
+            <p class="text-muted">No active invites right now</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Gym Invite Modal -->
+    <div class="modal-overlay" id="gymInviteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Post Workout Invite</h2>
+                <button class="modal-close" onclick="closeModal('gymInviteModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form method="post" action="{% url 'post_gym_invite' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Workout Type</label>
+                        {{ invite_form.workout_type }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Spots Available</label>
+                        {{ invite_form.spots }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Message</label>
+                        {{ invite_form.message }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('gymInviteModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Post Invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- No Gym Enrolled -->
+    <div class="section-header">
+        <h2><i class="fas fa-map-marker-alt"></i> Nearby Gyms</h2>
+        <p class="text-muted">Join a gym to see activity and connect with lifters</p>
+    </div>
+
+    <div class="gym-list">
+        {% for gym in gyms %}
+        <div class="gym-card">
+            <div class="gym-card-header">
+                <div class="gym-icon">
+                    <i class="fas fa-dumbbell"></i>
+                </div>
+                <div class="gym-info">
+                    <h3 class="gym-card-name">{{ gym.name }}</h3>
+                    <p class="gym-card-address">{{ gym.address }}</p>
+                </div>
+                <span class="gym-distance">{{ gym.distance }}</span>
+            </div>
+            <div class="gym-card-footer">
+                <div class="busy-indicator-sm" style="--busy-color: {{ gym.busy_level|busy_color }}">
+                    <div class="busy-dot"></div>
+                    <span>{{ gym.busy_level|busy_label }}</span>
+                </div>
+                <form method="post" action="{% url 'join_gym' gym.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm">Join</button>
+                </form>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-map-marker-alt"></i></div>
+            <h3>No gyms found</h3>
+            <p>Check back later for nearby gyms</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
