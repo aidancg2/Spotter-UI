@@ -35,7 +35,6 @@ class Profile(models.Model):
 
     @property
     def total_sets(self):
-        from django.db.models import Count
         return WorkoutSet.objects.filter(
             workout_exercise__workout__user=self.user,
             workout_exercise__workout__completed=True,
@@ -98,6 +97,7 @@ class Gym(models.Model):
     address = models.CharField(max_length=300)
     latitude = models.FloatField(default=0)
     longitude = models.FloatField(default=0)
+    distance_miles = models.FloatField(default=0, help_text='Distance in miles')
     max_capacity = models.IntegerField(default=100)
     current_activity = models.IntegerField(default=0)
 
@@ -109,11 +109,11 @@ class Gym(models.Model):
     ]
     busy_level = models.CharField(max_length=20, choices=BUSY_CHOICES, default='low')
 
-    arms_count = models.IntegerField(default=0)
-    legs_count = models.IntegerField(default=0)
-    cardio_count = models.IntegerField(default=0)
-    classes_count = models.IntegerField(default=0)
-    other_count = models.IntegerField(default=0)
+    arms_pct = models.IntegerField(default=0)
+    legs_pct = models.IntegerField(default=0)
+    cardio_pct = models.IntegerField(default=0)
+    classes_pct = models.IntegerField(default=0)
+    other_pct = models.IntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -125,11 +125,17 @@ class Gym(models.Model):
 
     @property
     def distance(self):
-        return "0.3 mi"
+        return f"{self.distance_miles} mi"
 
     @property
     def member_count(self):
         return self.memberships.count()
+
+    @property
+    def activity_pct(self):
+        if self.max_capacity == 0:
+            return 0
+        return int((self.current_activity / self.max_capacity) * 100)
 
 
 class GymMembership(models.Model):
@@ -180,6 +186,12 @@ class Post(models.Model):
     image = models.ImageField(upload_to='posts/', blank=True, null=True)
     location = models.CharField(max_length=200, blank=True)
     workout = models.ForeignKey('Workout', on_delete=models.SET_NULL, null=True, blank=True, related_name='posts')
+
+    # Workout summary fields
+    workout_name = models.CharField(max_length=100, blank=True)
+    exercises_count = models.IntegerField(default=0)
+    sets_count = models.IntegerField(default=0)
+    duration_display = models.CharField(max_length=50, blank=True)
 
     # PR info
     pr_exercise = models.CharField(max_length=100, blank=True)
@@ -236,14 +248,11 @@ class Post(models.Model):
         if seconds < 60:
             return "just now"
         elif seconds < 3600:
-            mins = int(seconds / 60)
-            return f"{mins}m ago"
+            return f"{int(seconds / 60)}m ago"
         elif seconds < 86400:
-            hours = int(seconds / 3600)
-            return f"{hours}h ago"
+            return f"{int(seconds / 3600)}h ago"
         else:
-            days = int(seconds / 86400)
-            return f"{days}d ago"
+            return f"{int(seconds / 86400)}d ago"
 
     def get_poll_options_list(self):
         if self.poll_options:
@@ -486,7 +495,6 @@ class GroupMembership(models.Model):
 
 class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    # Either group or recipient, not both
     group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True, related_name='messages')
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='received_messages')
     content = models.TextField()
@@ -498,7 +506,7 @@ class Message(models.Model):
         ordering = ['created_at']
 
     def __str__(self):
-        target = self.group.name if self.group else self.recipient.username
+        target = self.group.name if self.group else (self.recipient.username if self.recipient else '?')
         return f"{self.sender.username} -> {target}: {self.content[:50]}"
 
 
@@ -513,7 +521,7 @@ class WorkoutInvite(models.Model):
         ('friend', 'Friend Invite'),
     ]
     from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invites_sent')
-    to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invites_received')
+    to_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='invites_received')
     invite_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='friend')
     gym = models.ForeignKey(Gym, on_delete=models.SET_NULL, null=True, blank=True)
     workout_type = models.CharField(max_length=100, blank=True)
@@ -527,7 +535,8 @@ class WorkoutInvite(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.from_user.username} invited {self.to_user.username} ({self.status})"
+        to = self.to_user.username if self.to_user else 'gym'
+        return f"{self.from_user.username} invited {to} ({self.status})"
 
 
 class Nudge(models.Model):
